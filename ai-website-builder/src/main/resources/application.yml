@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: ai-website-builder
+  profiles:
+    active: dev
+server:
+  port: 8507
+  servlet:
+    context-path: /api
