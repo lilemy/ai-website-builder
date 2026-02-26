@@ -28,8 +28,13 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
-    public BaseResponse<?> businessExceptionHandler(BusinessException e) {
-        log.error("业务异常: {} {}", e.getCode(), e.getMessage());
+    public BaseResponse<?> businessExceptionHandler(BusinessException e, HttpServletRequest request) {
+        // 获取请求地址
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+        String url = method + " " + path;
+        String remoteHost = request.getRemoteHost();
+        log.error("业务异常 URL[{}], IP:[{}]: {} {}", url, remoteHost, e.getCode(), e.getMessage(), e);
         return ResultUtils.error(e.getCode(), e.getMessage());
     }
 
@@ -65,7 +70,7 @@ public class GlobalExceptionHandler {
         String url = method + " " + path;
         String remoteHost = request.getRemoteHost();
         log.error("无权限异常 => URL[{}], IP:[{}], 错误信息:[{}]",
-                url, remoteHost, e.getMessage());
+                url, remoteHost, e.getMessage(), e);
         return ResultUtils.error(ResultCode.NO_AUTH_ERROR, "无权限");
     }
 

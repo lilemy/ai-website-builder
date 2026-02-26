@@ -1,9 +1,13 @@
 package com.lilemy.aiwebsitebuilder.manager.satoken;
 
 import cn.dev33.satoken.stp.StpInterface;
+import cn.dev33.satoken.stp.StpUtil;
+import com.lilemy.aiwebsitebuilder.constant.UserConstant;
+import com.lilemy.aiwebsitebuilder.model.entity.User;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -28,6 +32,8 @@ public class StpInterfaceImpl implements StpInterface {
      */
     @Override
     public List<String> getRoleList(Object loginId, String s) {
-        return new ArrayList<>();
+        // 从当前登录用户信息中获取角色
+        User user = (User) StpUtil.getTokenSession().get(UserConstant.USER_LOGIN_STATE);
+        return Collections.singletonList(user.getUserRole());
     }
 }
