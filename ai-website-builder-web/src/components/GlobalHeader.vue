@@ -15,14 +15,32 @@
         <a-menu
           v-model:selectedKeys="selectedKeys"
           mode="horizontal"
-          :items="menuItems"
+          :items="items"
           @click="handleMenuClick"
         />
       </a-col>
       <!-- 右侧：用户操作区域 -->
       <a-col>
         <div class="user-login-status">
-          <a-button type="primary">登录</a-button>
+          <div v-if="loginUserStore.loginUser.id">
+            <a-dropdown>
+              <a-space>
+                <a-avatar :src="loginUserStore.loginUser.userAvatar" />
+                {{ loginUserStore.loginUser.userName ?? '无名' }}
+              </a-space>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item @click="doLogout">
+                    <LogoutOutlined />
+                    退出登录
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
+          </div>
+          <div v-else>
+            <a-button type="primary" href="/user/login">登录</a-button>
+          </div>
         </div>
       </a-col>
     </a-row>
@@ -30,26 +48,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import type { MenuProps } from 'ant-design-vue'
+import { type MenuProps, message } from 'ant-design-vue'
+import { useLoginUserStore } from '@/stores/loginUser.ts'
+import { LogoutOutlined } from '@ant-design/icons-vue'
+import { userLogout } from '@/api/userController.ts'
+import checkAccess from '@/access/checkAccess.ts'
 
 const router = useRouter()
 // 当前选中菜单
 const selectedKeys = ref<string[]>(['/'])
 // 监听路由变化，更新当前选中菜单
-router.afterEach((to, from, next) => {
+router.afterEach((to) => {
   selectedKeys.value = [to.path]
 })
 
-// 菜单配置项
-const menuItems = ref([
-  {
-    key: '/',
-    label: '首页',
-    title: '首页',
-  },
-])
+const loginUserStore = useLoginUserStore()
+
+const allRoutes = router.getRoutes()
+// 过滤菜单项
+const items = computed(() => {
+  return allRoutes
+    .filter((menu) => {
+      if (menu.meta?.hideInMenu) {
+        return false
+      }
+      // 根据权限过滤菜单，有权限则返回 true，则保留该菜单
+      const access = checkAccess(loginUserStore.loginUser, menu.meta?.access as string)
+      console.log(menu.meta?.access, access)
+      return access
+    })
+    .map((menu) => ({
+      key: menu.path,
+      // 优先取 title，没有则取 name
+      label: (menu.meta?.title || menu.name) as string,
+    }))
+    .reverse()
+})
 
 // 处理菜单点击
 const handleMenuClick: MenuProps['onClick'] = (e) => {
@@ -58,6 +94,20 @@ const handleMenuClick: MenuProps['onClick'] = (e) => {
   // 跳转到对应页面
   if (key.startsWith('/')) {
     router.push(key)
+  }
+}
+
+// 用户注销
+const doLogout = async () => {
+  const res = await userLogout()
+  if (res.data.code === 0) {
+    loginUserStore.setLoginUser({
+      userName: '未登录',
+    })
+    message.success('退出登录成功')
+    await router.push('/user/login')
+  } else {
+    message.error('退出登录失败，' + res.data.message)
   }
 }
 </script>
