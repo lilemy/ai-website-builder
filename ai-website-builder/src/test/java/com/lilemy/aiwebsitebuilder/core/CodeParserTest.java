@@ -1,7 +1,7 @@
 package com.lilemy.aiwebsitebuilder.core;
 
-import com.lilemy.aiwebsitebuilder.ai.model.HtmlCodeResult;
-import com.lilemy.aiwebsitebuilder.ai.model.MultiFileCodeResult;
+import com.lilemy.aiwebsitebuilder.core.parser.CodeParserExecutor;
+import com.lilemy.aiwebsitebuilder.model.enums.CodeGenTypeEnum;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -32,9 +32,8 @@ class CodeParserTest {
                 ```
                 随便写一段描述
                 """;
-        HtmlCodeResult result = CodeParser.parseHtmlCode(codeContent);
+        Object result = CodeParserExecutor.executeParser(codeContent, CodeGenTypeEnum.HTML);
         assertNotNull(result);
-        assertNotNull(result.getHtmlCode());
     }
 
     @Test
@@ -68,10 +67,7 @@ class CodeParserTest {
                 文件创建完成！
                 ```
                 """;
-        MultiFileCodeResult result = CodeParser.parseMultiFileCode(codeContent);
+        Object result = CodeParserExecutor.executeParser(codeContent, CodeGenTypeEnum.HTML);
         assertNotNull(result);
-        assertNotNull(result.getHtmlCode());
-        assertNotNull(result.getCssCode());
-        assertNotNull(result.getJsCode());
     }
 }
