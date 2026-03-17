@@ -111,6 +111,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    public UserVO getUserVO(Long id) {
+        if (id == null || id <= 0) {
+            return null;
+        }
+        return getUserVO(this.getById(id));
+    }
+
+    @Override
     public UserVO getUserVO(User user) {
         if (user == null) {
             return null;

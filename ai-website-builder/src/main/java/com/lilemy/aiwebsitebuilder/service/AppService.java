@@ -1,0 +1,94 @@
+package com.lilemy.aiwebsitebuilder.service;
+
+import com.lilemy.aiwebsitebuilder.common.DeleteRequest;
+import com.lilemy.aiwebsitebuilder.model.dto.app.AppCreateRequest;
+import com.lilemy.aiwebsitebuilder.model.dto.app.AppQueryRequest;
+import com.lilemy.aiwebsitebuilder.model.dto.app.AppUpdateRequest;
+import com.lilemy.aiwebsitebuilder.model.entity.App;
+import com.lilemy.aiwebsitebuilder.model.vo.app.AppVO;
+import com.mybatisflex.core.paginate.Page;
+import com.mybatisflex.core.query.QueryWrapper;
+import com.mybatisflex.core.service.IService;
+
+import java.util.List;
+
+/**
+ * 应用 服务层。
+ *
+ * @author lilemy
+ * @since 2026-03-04 22:57
+ */
+public interface AppService extends IService<App> {
+
+    /**
+     * 创建应用
+     *
+     * @param request 应用创建请求
+     * @return 应用id
+     */
+    Long createApp(AppCreateRequest request);
+
+    /**
+     * 更新应用
+     *
+     * @param request 应用更新请求
+     * @return 是否更新成功
+     */
+    Boolean updateApp(AppUpdateRequest request);
+
+    /**
+     * 删除应用
+     *
+     * @param request 应用删除请求
+     * @return 是否删除成功
+     */
+    Boolean deleteApp(DeleteRequest request);
+
+    /**
+     * 获取当前用户应用分页列表
+     *
+     * @param request 应用查询请求
+     * @return 应用分页列表
+     */
+    Page<AppVO> getLoginUserAppVOPage(AppQueryRequest request);
+
+    /**
+     * 获取精选应用分页列表
+     *
+     * @param request 应用查询请求
+     * @return 应用分页列表
+     */
+    Page<AppVO> getChoicenessAppVOPage(AppQueryRequest request);
+
+    /**
+     * 获取应用视图对象
+     *
+     * @param id 应用id
+     * @return 应用视图对象
+     */
+    AppVO getAppVO(Long id);
+
+    /**
+     * 获取应用视图对象
+     *
+     * @param app 应用
+     * @return 应用视图对象
+     */
+    AppVO getAppVO(App app);
+
+    /**
+     * 获取应用视图对象列表
+     *
+     * @param appList 应用列表
+     * @return 应用视图对象列表
+     */
+    List<AppVO> getAppVOList(List<App> appList);
+
+    /**
+     * 获取查询条件
+     *
+     * @param request 应用查询请求
+     * @return 查询条件
+     */
+    QueryWrapper getQueryWrapper(AppQueryRequest request);
+}

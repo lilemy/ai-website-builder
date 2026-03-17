@@ -91,7 +91,7 @@ public class UserController {
     @Operation(summary = "根据 id 获取用户（仅管理员）")
     @GetMapping("/get")
     @SaCheckRole(UserConstant.ADMIN_ROLE)
-    public BaseResponse<User> getUserById(long id) {
+    public BaseResponse<User> getUserById(Long id) {
         ThrowUtils.throwIf(id <= 0, ResultCode.PARAMS_ERROR);
         User user = userService.getById(id);
         ThrowUtils.throwIf(user == null, ResultCode.NOT_FOUND_ERROR);
@@ -100,7 +100,7 @@ public class UserController {
 
     @Operation(summary = "根据 id 获取包装类")
     @GetMapping("/get/vo")
-    public BaseResponse<UserVO> getUserVOById(long id) {
+    public BaseResponse<UserVO> getUserVOById(Long id) {
         BaseResponse<User> response = getUserById(id);
         User user = response.getData();
         return ResultUtils.success(userService.getUserVO(user));
