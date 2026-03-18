@@ -23,12 +23,13 @@ public class CodeFileSaverExecutor {
      *
      * @param codeResult  代码结果对象
      * @param codeGenType 代码生成类型
+     * @param appId       应用ID
      * @return 保存后的文件目录
      */
-    public static File executeSaver(Object codeResult, CodeGenTypeEnum codeGenType) {
+    public static File executeSaver(Object codeResult, CodeGenTypeEnum codeGenType, Long appId) {
         return switch (codeGenType) {
-            case HTML -> HTML_CODE_FILE_SAVER_TEMPLATE.saveCode((HtmlCodeResult) codeResult);
-            case MULTI_FILE -> MULTI_FILE_CODE_FILE_SAVER_TEMPLATE.saveCode((MultiFileCodeResult) codeResult);
+            case HTML -> HTML_CODE_FILE_SAVER_TEMPLATE.saveCode((HtmlCodeResult) codeResult, appId);
+            case MULTI_FILE -> MULTI_FILE_CODE_FILE_SAVER_TEMPLATE.saveCode((MultiFileCodeResult) codeResult, appId);
         };
     }
 }

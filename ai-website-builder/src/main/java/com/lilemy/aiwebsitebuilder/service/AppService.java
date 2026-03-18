@@ -9,6 +9,7 @@ import com.lilemy.aiwebsitebuilder.model.vo.app.AppVO;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -19,6 +20,15 @@ import java.util.List;
  * @since 2026-03-04 22:57
  */
 public interface AppService extends IService<App> {
+
+    /**
+     * 应用聊天生成代码
+     *
+     * @param appId   应用id
+     * @param message 聊天内容
+     * @return 生成的代码
+     */
+    Flux<String> chatToGenCode(Long appId, String message);
 
     /**
      * 创建应用

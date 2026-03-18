@@ -6,6 +6,7 @@ import com.lilemy.aiwebsitebuilder.common.DeleteRequest;
 import com.lilemy.aiwebsitebuilder.common.ResultCode;
 import com.lilemy.aiwebsitebuilder.constant.AppConstant;
 import com.lilemy.aiwebsitebuilder.constant.UserConstant;
+import com.lilemy.aiwebsitebuilder.core.AiCodeGeneratorFacade;
 import com.lilemy.aiwebsitebuilder.exception.ThrowUtils;
 import com.lilemy.aiwebsitebuilder.mapper.AppMapper;
 import com.lilemy.aiwebsitebuilder.model.dto.app.AppCreateRequest;
@@ -25,6 +26,7 @@ import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -44,6 +46,27 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+
+    @Override
+    public Flux<String> chatToGenCode(Long appId, String message) {
+        // 参数校验
+        ThrowUtils.throwIf(appId == null || appId <= 0, ResultCode.PARAMS_ERROR, "应用不存在");
+        ThrowUtils.throwIf(StringUtils.isBlank(message), ResultCode.PARAMS_ERROR, "请输入内容");
+        // 查询应用信息
+        App app = this.getById(appId);
+        ThrowUtils.throwIf(app == null, ResultCode.NOT_FOUND_ERROR, "应用不存在");
+        // 校验用户是否有应用访问权限
+        User loginUser = userService.getLoginUser();
+        ThrowUtils.throwIf(!app.getUserId().equals(loginUser.getId()), ResultCode.NO_AUTH_ERROR);
+        // 获取应用生成类型
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(app.getCodeGenType());
+        ThrowUtils.throwIf(codeGenTypeEnum == null, ResultCode.PARAMS_ERROR, "不支持的生成类型");
+        // 调用 AI 生成代码
+        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+    }
 
     @Override
     public Long createApp(AppCreateRequest request) {

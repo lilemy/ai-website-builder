@@ -2,6 +2,7 @@ package com.lilemy.aiwebsitebuilder.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.json.JSONUtil;
 import com.lilemy.aiwebsitebuilder.annotation.RepeatSubmit;
 import com.lilemy.aiwebsitebuilder.common.BaseResponse;
 import com.lilemy.aiwebsitebuilder.common.DeleteRequest;
@@ -20,7 +21,14 @@ import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.Map;
 
 /**
  * 应用 控制层。
@@ -34,6 +42,32 @@ public class AppController {
 
     @Resource
     private AppService appService;
+
+    @Operation(summary = "应用聊天生成代码（流式 SSE）")
+    @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
+                                                       @RequestParam String message) {
+        // 参数校验
+        ThrowUtils.throwIf(appId == null || appId <= 0, ResultCode.PARAMS_ERROR, "应用不存在");
+        ThrowUtils.throwIf(StringUtils.isBlank(message), ResultCode.PARAMS_ERROR, "请输入内容");
+        // 调用服务生成代码（流式）
+        Flux<String> contentFlux = appService.chatToGenCode(appId, message);
+        // 转换为 ServerSentEvent 格式
+        return contentFlux.map(chunk -> {
+            // 将内容包装为 JSON 对象
+            Map<String, String> wrapper = Map.of("d", chunk);
+            String jsonStr = JSONUtil.toJsonStr(wrapper);
+            return ServerSentEvent.<String>builder()
+                    .data(jsonStr)
+                    .build();
+        }).concatWith(Mono.just(
+                // 发送结束事件
+                ServerSentEvent.<String>builder()
+                        .event("done")
+                        .data("")
+                        .build()
+        ));
+    }
 
     @Operation(summary = "创建应用")
     @RepeatSubmit()
@@ -112,16 +146,16 @@ public class AppController {
     @Operation(summary = "管理员根据 id 获取应用详情")
     @GetMapping("/admin/get/vo")
     @SaCheckRole(UserConstant.ADMIN_ROLE)
-    public BaseResponse<AppVO> getAppVOByIdByAdmin(long id) {
+    public BaseResponse<AppVO> getAppVOByIdByAdmin(Long id) {
         ThrowUtils.throwIf(id <= 0, ResultCode.PARAMS_ERROR);
         // 获取封装类
         return ResultUtils.success(appService.getAppVO(id));
     }
 
     @Operation(summary = "管理员分页获取应用列表")
-    @PostMapping("/admin/list/vo")
+    @GetMapping("/admin/list/vo")
     @SaCheckRole(UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<AppVO>> getAppVOByPageByAdmin(@RequestBody AppQueryRequest appQueryRequest) {
+    public BaseResponse<Page<AppVO>> getAppVOByPageByAdmin(AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ResultCode.PARAMS_ERROR);
         long pageNum = appQueryRequest.getPageNum();
         long pageSize = appQueryRequest.getPageSize();
