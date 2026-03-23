@@ -10,10 +10,7 @@ import com.lilemy.aiwebsitebuilder.common.ResultCode;
 import com.lilemy.aiwebsitebuilder.common.ResultUtils;
 import com.lilemy.aiwebsitebuilder.constant.UserConstant;
 import com.lilemy.aiwebsitebuilder.exception.ThrowUtils;
-import com.lilemy.aiwebsitebuilder.model.dto.app.AppAdminUpdateRequest;
-import com.lilemy.aiwebsitebuilder.model.dto.app.AppCreateRequest;
-import com.lilemy.aiwebsitebuilder.model.dto.app.AppQueryRequest;
-import com.lilemy.aiwebsitebuilder.model.dto.app.AppUpdateRequest;
+import com.lilemy.aiwebsitebuilder.model.dto.app.*;
 import com.lilemy.aiwebsitebuilder.model.entity.App;
 import com.lilemy.aiwebsitebuilder.model.vo.app.AppVO;
 import com.lilemy.aiwebsitebuilder.service.AppService;
@@ -67,6 +64,14 @@ public class AppController {
                         .data("")
                         .build()
         ));
+    }
+
+    @Operation(summary = "应用部署")
+    @RepeatSubmit()
+    @PostMapping("/deploy")
+    public BaseResponse<String> deployApp(@RequestBody AppDeployRequest request) {
+        ThrowUtils.throwIf(request == null, ResultCode.PARAMS_ERROR);
+        return ResultUtils.success(appService.deployApp(request));
     }
 
     @Operation(summary = "创建应用")

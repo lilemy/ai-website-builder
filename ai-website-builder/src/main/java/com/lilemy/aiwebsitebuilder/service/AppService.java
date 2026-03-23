@@ -2,6 +2,7 @@ package com.lilemy.aiwebsitebuilder.service;
 
 import com.lilemy.aiwebsitebuilder.common.DeleteRequest;
 import com.lilemy.aiwebsitebuilder.model.dto.app.AppCreateRequest;
+import com.lilemy.aiwebsitebuilder.model.dto.app.AppDeployRequest;
 import com.lilemy.aiwebsitebuilder.model.dto.app.AppQueryRequest;
 import com.lilemy.aiwebsitebuilder.model.dto.app.AppUpdateRequest;
 import com.lilemy.aiwebsitebuilder.model.entity.App;
@@ -29,6 +30,14 @@ public interface AppService extends IService<App> {
      * @return 生成的代码
      */
     Flux<String> chatToGenCode(Long appId, String message);
+
+    /**
+     * 应用部署
+     *
+     * @param request 应用部署请求
+     * @return 部署后的访问链接
+     */
+    String deployApp(AppDeployRequest request);
 
     /**
      * 创建应用
