@@ -18,15 +18,18 @@ import com.lilemy.aiwebsitebuilder.model.dto.app.AppQueryRequest;
 import com.lilemy.aiwebsitebuilder.model.dto.app.AppUpdateRequest;
 import com.lilemy.aiwebsitebuilder.model.entity.App;
 import com.lilemy.aiwebsitebuilder.model.entity.User;
+import com.lilemy.aiwebsitebuilder.model.enums.ChatHistoryMessageTypeEnum;
 import com.lilemy.aiwebsitebuilder.model.enums.CodeGenTypeEnum;
 import com.lilemy.aiwebsitebuilder.model.vo.app.AppVO;
 import com.lilemy.aiwebsitebuilder.model.vo.user.UserVO;
 import com.lilemy.aiwebsitebuilder.service.AppService;
+import com.lilemy.aiwebsitebuilder.service.ChatHistoryService;
 import com.lilemy.aiwebsitebuilder.service.UserService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -46,11 +49,15 @@ import java.util.stream.Collectors;
  * @author lilemy
  * @since 2026-03-04 22:57
  */
+@Slf4j
 @Service
 public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppService {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private ChatHistoryService chatHistoryService;
 
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
@@ -69,8 +76,27 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 获取应用生成类型
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(app.getCodeGenType());
         ThrowUtils.throwIf(codeGenTypeEnum == null, ResultCode.PARAMS_ERROR, "不支持的生成类型");
+        // 通过校验后，添加用户消息到对话历史
+        chatHistoryService.createChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
         // 调用 AI 生成代码
-        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        // 收集 AI 响应内容并在完成后记录到对话历史
+        StringBuilder aiResponseBuilder = new StringBuilder();
+        return contentFlux.map(chunk -> {
+            // 收集 AI 响应内容
+            aiResponseBuilder.append(chunk);
+            return chunk;
+        }).doOnComplete(() -> {
+            // 流式响应完成后，添加 AI 消息到对话历史
+            String aiResponse = aiResponseBuilder.toString();
+            if (StringUtils.isNotBlank(aiResponse)) {
+                chatHistoryService.createChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+            }
+        }).doOnError(error -> {
+            // 记录错误消息
+            String errorMessage = "AI 回复失败：" + error.getMessage();
+            chatHistoryService.createChatMessage(appId, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+        });
     }
 
     @Override
@@ -168,6 +194,16 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         User loginUser = userService.getLoginUser();
         ThrowUtils.throwIf(!oldApp.getUserId().equals(loginUser.getId()) && UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole()),
                 ResultCode.NO_AUTH_ERROR);
+        // 删除关联的对话历史
+        try {
+            Boolean result = chatHistoryService.deleteByAppId(request.getId());
+            if (!result) {
+                log.error("删除应用下的对话历史失败");
+            }
+        } catch (Exception e) {
+            log.error("删除应用下的对话历史失败：{}", e.getMessage());
+        }
+        // 删除应用
         return this.removeById(request.getId());
     }
 
