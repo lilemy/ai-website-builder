@@ -6,6 +6,7 @@ import com.lilemy.aiwebsitebuilder.model.vo.chathistory.ChatHistoryVO;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
 import java.time.LocalDateTime;
 
@@ -45,6 +46,16 @@ public interface ChatHistoryService extends IService<ChatHistory> {
      * @return 对话历史
      */
     Page<ChatHistoryVO> getChatHistoryVOPage(Long appId, int pageSize, LocalDateTime lastCreateTime);
+
+    /**
+     * 加载对话历史到内存
+     *
+     * @param appId      应用 id
+     * @param chatMemory 对话历史内存
+     * @param maxCount   最大数量
+     * @return 加载数量
+     */
+    Integer loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount);
 
     /**
      * 获取查询条件

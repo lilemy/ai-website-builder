@@ -1,6 +1,7 @@
 package com.lilemy.aiwebsitebuilder.core;
 
 import com.lilemy.aiwebsitebuilder.ai.AiCodeGeneratorService;
+import com.lilemy.aiwebsitebuilder.ai.AiCodeGeneratorServiceFactory;
 import com.lilemy.aiwebsitebuilder.ai.model.HtmlCodeResult;
 import com.lilemy.aiwebsitebuilder.ai.model.MultiFileCodeResult;
 import com.lilemy.aiwebsitebuilder.common.ResultCode;
@@ -27,7 +28,7 @@ import java.io.File;
 public class AiCodeGeneratorFacade {
 
     @Resource
-    private AiCodeGeneratorService aiCodeGeneratorService;
+    private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
 
     /**
      * 统一入口：根据类型生成并保存代码
@@ -39,6 +40,8 @@ public class AiCodeGeneratorFacade {
      */
     public File generateAndSaveCode(String userMessage, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
         ThrowUtils.throwIf(codeGenTypeEnum == null, ResultCode.SYSTEM_ERROR, "生成类型为空");
+        // 根据 appId 获取对应的 AI 服务实例
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 HtmlCodeResult result = aiCodeGeneratorService.generateHtmlCode(userMessage);
@@ -60,6 +63,8 @@ public class AiCodeGeneratorFacade {
      */
     public Flux<String> generateAndSaveCodeStream(String userMessage, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
         ThrowUtils.throwIf(codeGenTypeEnum == null, ResultCode.SYSTEM_ERROR, "生成类型为空");
+        // 根据 appId 获取对应的 AI 服务实例
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 Flux<String> codeStream = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
