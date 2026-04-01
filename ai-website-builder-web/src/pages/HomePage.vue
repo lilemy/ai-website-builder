@@ -240,7 +240,7 @@ const loadFeaturedApps = async () => {
 // 查看对话
 const viewChat = (appId: string | number | undefined) => {
   if (appId) {
-    router.push(`/app/chat/${appId}?view=1`)
+    router.push(`/app/chat/${appId}`)
   }
 }
 

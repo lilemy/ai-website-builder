@@ -88,6 +88,22 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponsePageChatHistory = {
+    /** 响应状态码 */
+    code?: number
+    data?: PageChatHistory
+    /** 响应信息 */
+    message?: string
+  }
+
+  type BaseResponsePageChatHistoryVO = {
+    /** 响应状态码 */
+    code?: number
+    data?: PageChatHistoryVO
+    /** 响应信息 */
+    message?: string
+  }
+
   type BaseResponsePageUserVO = {
     /** 响应状态码 */
     code?: number
@@ -121,6 +137,39 @@ declare namespace API {
     message?: string
   }
 
+  type ChatHistory = {
+    id?: number
+    message?: string
+    messageType?: string
+    appId?: number
+    userId?: number
+    createTime?: string
+    updateTime?: string
+    isDelete?: number
+  }
+
+  type ChatHistoryQueryRequest = {
+    pageNum?: number
+    pageSize?: number
+    sortField?: string
+    sortOrder?: string
+    message?: string
+    messageType?: string
+    appId?: number
+    userId?: number
+    lastCreateTime?: string
+  }
+
+  type ChatHistoryVO = {
+    id?: number
+    message?: string
+    messageType?: string
+    appId?: number
+    userId?: number
+    createTime?: string
+    updateTime?: string
+  }
+
   type chatToGenCodeParams = {
     appId: number
     message: string
@@ -128,6 +177,10 @@ declare namespace API {
 
   type DeleteRequest = {
     id?: number
+  }
+
+  type getAllChatHistoryPageByAdminParams = {
+    request: ChatHistoryQueryRequest
   }
 
   type getAppVOByIdByAdminParams = {
@@ -140,6 +193,12 @@ declare namespace API {
 
   type getAppVOByPageByAdminParams = {
     appQueryRequest: AppQueryRequest
+  }
+
+  type getChatHistoryVOPageParams = {
+    appId: number
+    pageSize?: number
+    lastCreateTime?: string
   }
 
   type getChoicenessAppVOPageParams = {
@@ -175,6 +234,24 @@ declare namespace API {
 
   type PageAppVO = {
     records?: AppVO[]
+    pageNumber?: number
+    pageSize?: number
+    totalPage?: number
+    totalRow?: number
+    optimizeCountQuery?: boolean
+  }
+
+  type PageChatHistory = {
+    records?: ChatHistory[]
+    pageNumber?: number
+    pageSize?: number
+    totalPage?: number
+    totalRow?: number
+    optimizeCountQuery?: boolean
+  }
+
+  type PageChatHistoryVO = {
+    records?: ChatHistoryVO[]
     pageNumber?: number
     pageSize?: number
     totalPage?: number
