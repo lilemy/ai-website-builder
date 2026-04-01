@@ -43,7 +43,7 @@ public class ChatHistoryController {
     @Operation(summary = "管理员分页查询所有对话历史")
     @GetMapping("/admin/list/vo")
     @SaCheckRole(UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<ChatHistory>> getAllChatHistoryPageByAdmin(@RequestBody ChatHistoryQueryRequest request) {
+    public BaseResponse<Page<ChatHistory>> getAllChatHistoryPageByAdmin(ChatHistoryQueryRequest request) {
         ThrowUtils.throwIf(request == null, ResultCode.PARAMS_ERROR);
         int pageNum = request.getPageNum();
         int pageSize = request.getPageSize();
