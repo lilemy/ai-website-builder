@@ -2,6 +2,8 @@ package com.lilemy.aiwebsitebuilder.core.parser;
 
 import com.lilemy.aiwebsitebuilder.ai.model.HtmlCodeResult;
 import com.lilemy.aiwebsitebuilder.ai.model.MultiFileCodeResult;
+import com.lilemy.aiwebsitebuilder.common.ResultCode;
+import com.lilemy.aiwebsitebuilder.exception.BusinessException;
 import com.lilemy.aiwebsitebuilder.model.enums.CodeGenTypeEnum;
 
 /**
@@ -27,6 +29,8 @@ public class CodeParserExecutor {
         return switch (codeGenTypeEnum) {
             case HTML -> HTML_CODE_PARSER.parseCode(codeContent);
             case MULTI_FILE -> MULTI_FILE_CODE_PARSER.parseCode(codeContent);
+            default ->
+                    throw new BusinessException(ResultCode.SYSTEM_ERROR, "不支持的生成类型：" + codeGenTypeEnum.getText());
         };
     }
 }

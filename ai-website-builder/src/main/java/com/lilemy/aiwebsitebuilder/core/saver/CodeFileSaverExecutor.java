@@ -2,6 +2,8 @@ package com.lilemy.aiwebsitebuilder.core.saver;
 
 import com.lilemy.aiwebsitebuilder.ai.model.HtmlCodeResult;
 import com.lilemy.aiwebsitebuilder.ai.model.MultiFileCodeResult;
+import com.lilemy.aiwebsitebuilder.common.ResultCode;
+import com.lilemy.aiwebsitebuilder.exception.BusinessException;
 import com.lilemy.aiwebsitebuilder.model.enums.CodeGenTypeEnum;
 
 import java.io.File;
@@ -30,6 +32,8 @@ public class CodeFileSaverExecutor {
         return switch (codeGenType) {
             case HTML -> HTML_CODE_FILE_SAVER_TEMPLATE.saveCode((HtmlCodeResult) codeResult, appId);
             case MULTI_FILE -> MULTI_FILE_CODE_FILE_SAVER_TEMPLATE.saveCode((MultiFileCodeResult) codeResult, appId);
+            default ->
+                    throw new BusinessException(ResultCode.SYSTEM_ERROR, "不支持的代码生成类型：" + codeGenType.getText());
         };
     }
 }
