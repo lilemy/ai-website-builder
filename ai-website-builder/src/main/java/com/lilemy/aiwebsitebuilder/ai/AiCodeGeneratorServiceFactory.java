@@ -2,8 +2,8 @@ package com.lilemy.aiwebsitebuilder.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.lilemy.aiwebsitebuilder.ai.config.CustomRedisChatMemoryStore;
 import com.lilemy.aiwebsitebuilder.service.ChatHistoryService;
-import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
@@ -32,7 +32,7 @@ public class AiCodeGeneratorServiceFactory {
     private StreamingChatModel streamingChatModel;
 
     @Resource
-    private RedisChatMemoryStore redisChatMemoryStore;
+    private CustomRedisChatMemoryStore customRedisChatMemoryStore;
 
     @Resource
     private ChatHistoryService chatHistoryService;
@@ -73,7 +73,7 @@ public class AiCodeGeneratorServiceFactory {
         // 根据 appId 构建独立的对话记忆
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder()
                 .id(appId)
-                .chatMemoryStore(redisChatMemoryStore)
+                .chatMemoryStore(customRedisChatMemoryStore)
                 .maxMessages(20)
                 .build();
         // 从数据库加载历史对话到记忆中

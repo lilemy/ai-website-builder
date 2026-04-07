@@ -1,6 +1,5 @@
 package com.lilemy.aiwebsitebuilder.config;
 
-import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import lombok.Data;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -18,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "spring.data.redis")
-public class RedisConfig {
+public class RedissonConfig {
 
     private String host;
 
@@ -28,8 +27,6 @@ public class RedisConfig {
 
     private String password;
 
-    private Long ttl;
-
     @Bean
     public RedissonClient redissonClient() {
         Config config = new Config();
@@ -38,17 +35,5 @@ public class RedisConfig {
                 .setDatabase(database)
                 .setPassword(password);
         return Redisson.create(config);
-    }
-
-    @Bean
-    public RedisChatMemoryStore redisChatMemoryStore() {
-        return RedisChatMemoryStore.builder()
-                .prefix("chat:memory:")
-                .host(host)
-                .port(port)
-                .user("default")
-                .password(password)
-                .ttl(ttl)
-                .build();
     }
 }
