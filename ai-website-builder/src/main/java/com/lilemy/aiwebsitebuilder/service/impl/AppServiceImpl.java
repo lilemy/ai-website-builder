@@ -9,6 +9,7 @@ import com.lilemy.aiwebsitebuilder.common.ResultCode;
 import com.lilemy.aiwebsitebuilder.constant.AppConstant;
 import com.lilemy.aiwebsitebuilder.constant.UserConstant;
 import com.lilemy.aiwebsitebuilder.core.AiCodeGeneratorFacade;
+import com.lilemy.aiwebsitebuilder.core.handler.StreamHandlerExecutor;
 import com.lilemy.aiwebsitebuilder.exception.BusinessException;
 import com.lilemy.aiwebsitebuilder.exception.ThrowUtils;
 import com.lilemy.aiwebsitebuilder.mapper.AppMapper;
@@ -81,22 +82,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 调用 AI 生成代码
         Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
         // 收集 AI 响应内容并在完成后记录到对话历史
-        StringBuilder aiResponseBuilder = new StringBuilder();
-        return contentFlux.map(chunk -> {
-            // 收集 AI 响应内容
-            aiResponseBuilder.append(chunk);
-            return chunk;
-        }).doOnComplete(() -> {
-            // 流式响应完成后，添加 AI 消息到对话历史
-            String aiResponse = aiResponseBuilder.toString();
-            if (StringUtils.isNotBlank(aiResponse)) {
-                chatHistoryService.createChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
-            }
-        }).doOnError(error -> {
-            // 记录错误消息
-            String errorMessage = "AI 回复失败：" + error.getMessage();
-            chatHistoryService.createChatMessage(appId, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
-        });
+        return new StreamHandlerExecutor().doExecute(contentFlux, chatHistoryService, appId, loginUser.getId(), codeGenTypeEnum);
     }
 
     @Override
@@ -155,8 +141,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         app.setUserId(loginUser.getId());
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(12, initPrompt.length())));
-        // 暂时设置为多文件生成
-        app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
+        // 暂时设置为 VUE 工程生成
+        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
         // 插入数据库
         boolean result = this.save(app);
         ThrowUtils.throwIf(!result, ResultCode.OPERATION_ERROR);

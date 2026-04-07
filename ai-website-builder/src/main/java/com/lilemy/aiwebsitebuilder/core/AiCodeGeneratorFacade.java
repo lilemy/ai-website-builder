@@ -1,15 +1,20 @@
 package com.lilemy.aiwebsitebuilder.core;
 
+import cn.hutool.json.JSONUtil;
 import com.lilemy.aiwebsitebuilder.ai.AiCodeGeneratorService;
 import com.lilemy.aiwebsitebuilder.ai.AiCodeGeneratorServiceFactory;
 import com.lilemy.aiwebsitebuilder.ai.model.HtmlCodeResult;
 import com.lilemy.aiwebsitebuilder.ai.model.MultiFileCodeResult;
+import com.lilemy.aiwebsitebuilder.ai.model.message.AiResponseMessage;
+import com.lilemy.aiwebsitebuilder.ai.model.message.ToolExecutedMessage;
+import com.lilemy.aiwebsitebuilder.ai.model.message.ToolRequestMessage;
 import com.lilemy.aiwebsitebuilder.common.ResultCode;
 import com.lilemy.aiwebsitebuilder.core.parser.CodeParserExecutor;
 import com.lilemy.aiwebsitebuilder.core.saver.CodeFileSaverExecutor;
 import com.lilemy.aiwebsitebuilder.exception.BusinessException;
 import com.lilemy.aiwebsitebuilder.exception.ThrowUtils;
 import com.lilemy.aiwebsitebuilder.model.enums.CodeGenTypeEnum;
+import dev.langchain4j.service.TokenStream;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -81,10 +86,37 @@ public class AiCodeGeneratorFacade {
                 yield processCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
             }
             case VUE_PROJECT -> {
-                Flux<String> codeStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
-                yield processCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
+                TokenStream tokenStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
+                yield processTokenStream(tokenStream);
             }
         };
+    }
+
+    /**
+     * 将 TokenStream 转换为 Flux<String>，并传递工具调用信息
+     *
+     * @param tokenStream 工具调用流
+     * @return 流式响应
+     */
+    private Flux<String> processTokenStream(TokenStream tokenStream) {
+        return Flux.create(sink -> tokenStream
+                .onPartialResponse(partialResponse -> {
+                    AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
+                    sink.next(JSONUtil.toJsonStr(aiResponseMessage));
+                })
+                .onPartialToolCall(partialToolCall -> {
+                    ToolRequestMessage toolRequestMessage = new ToolRequestMessage(partialToolCall);
+                    sink.next(JSONUtil.toJsonStr(toolRequestMessage));
+                })
+                .onToolExecuted(toolExecution -> {
+                    ToolExecutedMessage toolExecutedMessage = new ToolExecutedMessage(toolExecution);
+                    sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
+                })
+                .onCompleteResponse(completeResponse -> sink.complete())
+                .onError(throwable -> {
+                    log.error("AI 错误：{}", throwable.getMessage(), throwable);
+                    sink.error(throwable);
+                }).start());
     }
 
     /**
