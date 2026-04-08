@@ -9,6 +9,7 @@ import com.lilemy.aiwebsitebuilder.common.ResultCode;
 import com.lilemy.aiwebsitebuilder.constant.AppConstant;
 import com.lilemy.aiwebsitebuilder.constant.UserConstant;
 import com.lilemy.aiwebsitebuilder.core.AiCodeGeneratorFacade;
+import com.lilemy.aiwebsitebuilder.core.builder.VueProjectBuilder;
 import com.lilemy.aiwebsitebuilder.core.handler.StreamHandlerExecutor;
 import com.lilemy.aiwebsitebuilder.exception.BusinessException;
 import com.lilemy.aiwebsitebuilder.exception.ThrowUtils;
@@ -109,6 +110,19 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 检查源目录是否存在
         File sourceDir = new File(sourceDirPath);
         ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(), ResultCode.OPERATION_ERROR, "应用代码不存在，请先生成代码");
+        // Vue 项目，执行构建
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
+        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
+            // 构建项目
+            boolean buildSuccess = new VueProjectBuilder().buildProject(sourceDirPath);
+            ThrowUtils.throwIf(!buildSuccess, ResultCode.SYSTEM_ERROR, "Vue 项目构建失败，请检查代码和依赖");
+            // 检查 dist 目录是否存在
+            File distDir = new File(sourceDirPath, "dist");
+            ThrowUtils.throwIf(!distDir.exists() || !distDir.isDirectory(), ResultCode.SYSTEM_ERROR, "Vue 项目构建完成，但未生成 dist 目录");
+            // 将 dist 目录作为部署源
+            sourceDir = distDir;
+            log.info("Vue 项目构建完成，dist 目录: {}", distDir.getAbsolutePath());
+        }
         // 复制文件到部署目录
         String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
         try {

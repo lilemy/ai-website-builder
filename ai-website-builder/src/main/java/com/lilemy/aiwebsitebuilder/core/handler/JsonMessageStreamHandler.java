@@ -4,6 +4,8 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.lilemy.aiwebsitebuilder.ai.model.message.*;
+import com.lilemy.aiwebsitebuilder.constant.AppConstant;
+import com.lilemy.aiwebsitebuilder.core.builder.VueProjectBuilder;
 import com.lilemy.aiwebsitebuilder.model.enums.ChatHistoryMessageTypeEnum;
 import com.lilemy.aiwebsitebuilder.service.ChatHistoryService;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +47,9 @@ public class JsonMessageStreamHandler {
                     // 流式响应完成后，添加 AI 消息到对话历史
                     String aiResponse = chatHistoryBuilder.toString();
                     chatHistoryService.createChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), userId);
+                    // 异步构建 Vue 项目
+                    String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
+                    new VueProjectBuilder().buildProjectAsync(projectPath);
                 })
                 .doOnError(error -> {
                     // 记录错误消息
@@ -85,6 +90,7 @@ public class JsonMessageStreamHandler {
                     // 不是第一次调用这个工具，直接返回空
                     return "";
                 }
+
             }
             case TOOL_EXECUTED -> {
                 ToolExecutedMessage toolExecutedMessage = JSONUtil.toBean(chunk, ToolExecutedMessage.class);
