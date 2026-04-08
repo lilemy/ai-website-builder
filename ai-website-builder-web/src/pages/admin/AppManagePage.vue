@@ -12,13 +12,9 @@
         <a-select
           v-model:value="searchParams.codeGenType"
           placeholder="选择生成类型"
-          style="width: 120px"
-        >
-          <a-select-option value="">全部</a-select-option>
-          <a-select-option value="html">HTML</a-select-option>
-          <a-select-option value="react">React</a-select-option>
-          <a-select-option value="vue">Vue</a-select-option>
-        </a-select>
+          style="width: 160px"
+          :options="CODE_GEN_TYPE_OPTIONS"
+        />
       </a-form-item>
       <a-form-item>
         <a-button type="primary" html-type="submit">搜索</a-button>
@@ -90,6 +86,7 @@ import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { deleteAppByAdmin, getAppVoByPageByAdmin, updateAppByAdmin } from '@/api/appController'
 import dayjs from 'dayjs'
+import { CODE_GEN_TYPE_OPTIONS } from '@/utils/codeGenTypes.ts'
 
 const router = useRouter()
 
