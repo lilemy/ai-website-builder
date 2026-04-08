@@ -16,6 +16,7 @@ import com.lilemy.aiwebsitebuilder.model.vo.user.UserVO;
 import com.lilemy.aiwebsitebuilder.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
@@ -149,11 +150,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String sortField = userQueryRequest.getSortField();
         String sortOrder = userQueryRequest.getSortOrder();
         return QueryWrapper.create()
-                .eq("id", id)
-                .eq("userRole", userRole)
-                .like("userAccount", userAccount)
-                .like("userName", userName)
-                .like("userProfile", userProfile)
+                .eq(User::getId, id, id != null)
+                .eq(User::getUserRole, userRole, StringUtils.isNotBlank(userRole))
+                .like(User::getUserAccount, userAccount, StringUtils.isNotBlank(userAccount))
+                .like(User::getUserName, userName, StringUtils.isNotBlank(userName))
+                .like(User::getUserProfile, userProfile, StringUtils.isNotBlank(userProfile))
                 .orderBy(sortField, "ascend".equals(sortOrder));
     }
 

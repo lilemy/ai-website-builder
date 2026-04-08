@@ -26,6 +26,7 @@ import com.lilemy.aiwebsitebuilder.model.vo.app.AppVO;
 import com.lilemy.aiwebsitebuilder.model.vo.user.UserVO;
 import com.lilemy.aiwebsitebuilder.service.AppService;
 import com.lilemy.aiwebsitebuilder.service.ChatHistoryService;
+import com.lilemy.aiwebsitebuilder.service.ScreenshotService;
 import com.lilemy.aiwebsitebuilder.service.UserService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
@@ -63,6 +64,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+
+    @Resource
+    private ScreenshotService screenshotService;
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String message) {
@@ -137,8 +141,33 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         updateApp.setDeployedTime(LocalDateTime.now());
         boolean result = this.updateById(updateApp);
         ThrowUtils.throwIf(!result, ResultCode.OPERATION_ERROR, "更新应用部署信息失败");
+        // 构建应用访问 URL
+        String appDeployUrl = String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        // 异步生成截图并更新应用封面
+        generateAppScreenshotAsync(appId, appDeployUrl);
         // 返回可访问的 URL
-        return String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        return appDeployUrl;
+    }
+
+    /**
+     * 异步生成应用截图并更新封面
+     *
+     * @param appId  应用ID
+     * @param appUrl 应用访问URL
+     */
+    @Override
+    public void generateAppScreenshotAsync(Long appId, String appUrl) {
+        // 使用虚拟线程异步执行
+        Thread.startVirtualThread(() -> {
+            // 调用截图服务生成截图并上传
+            String screenshotUrl = screenshotService.generateAndUploadScreenshot(appUrl);
+            // 更新应用封面字段
+            App updateApp = new App();
+            updateApp.setId(appId);
+            updateApp.setCover(screenshotUrl);
+            boolean updated = this.updateById(updateApp);
+            ThrowUtils.throwIf(!updated, ResultCode.OPERATION_ERROR, "更新应用封面字段失败");
+        });
     }
 
     @Override
@@ -298,11 +327,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         String sortField = request.getSortField();
         String sortOrder = request.getSortOrder();
         return QueryWrapper.create()
-                .like(App::getAppName, appName)
-                .like(App::getInitPrompt, initPrompt)
-                .eq(App::getCodeGenType, codeGenType)
-                .eq(App::getPriority, priority)
-                .eq(App::getUserId, userId)
+                .like(App::getAppName, appName, StringUtils.isNotBlank(appName))
+                .like(App::getInitPrompt, initPrompt, StringUtils.isNotBlank(initPrompt))
+                .eq(App::getCodeGenType, codeGenType, StringUtils.isNotBlank(codeGenType))
+                .eq(App::getPriority, priority, priority != null)
+                .eq(App::getUserId, userId, userId != null)
                 .orderBy(sortField, "ascend".equals(sortOrder));
     }
 }

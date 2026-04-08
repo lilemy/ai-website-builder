@@ -151,10 +151,10 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         String sortField = request.getSortField();
         String sortOrder = request.getSortOrder();
         // 拼接查询条件
-        queryWrapper.like(ChatHistory::getMessage, message)
-                .eq(ChatHistory::getMessageType, messageType)
-                .eq(ChatHistory::getAppId, appId)
-                .eq(ChatHistory::getUserId, userId);
+        queryWrapper.like(ChatHistory::getMessage, message, StringUtils.isNotBlank(message))
+                .eq(ChatHistory::getMessageType, messageType, StringUtils.isNotBlank(messageType))
+                .eq(ChatHistory::getAppId, appId, appId != null)
+                .eq(ChatHistory::getUserId, userId, userId != null);
         // 游标查询 - 只使用 createTime 作为游标
         if (lastCreateTime != null) {
             queryWrapper.lt(ChatHistory::getCreateTime, lastCreateTime);
