@@ -18,6 +18,7 @@ import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
@@ -72,6 +73,12 @@ public class AppController {
     public BaseResponse<String> deployApp(@RequestBody AppDeployRequest request) {
         ThrowUtils.throwIf(request == null, ResultCode.PARAMS_ERROR);
         return ResultUtils.success(appService.deployApp(request));
+    }
+
+    @Operation(summary = "下载应用代码")
+    @GetMapping("/download/code/{appId}")
+    public void downloadAppCode(@PathVariable Long appId, HttpServletResponse response) {
+        appService.downloadAppCode(appId, response);
     }
 
     @Operation(summary = "创建应用")

@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.lilemy.aiwebsitebuilder.ai.AiCodeGenTypeRoutingService;
 import com.lilemy.aiwebsitebuilder.common.DeleteRequest;
 import com.lilemy.aiwebsitebuilder.common.ResultCode;
 import com.lilemy.aiwebsitebuilder.constant.AppConstant;
@@ -25,14 +26,12 @@ import com.lilemy.aiwebsitebuilder.model.enums.ChatHistoryMessageTypeEnum;
 import com.lilemy.aiwebsitebuilder.model.enums.CodeGenTypeEnum;
 import com.lilemy.aiwebsitebuilder.model.vo.app.AppVO;
 import com.lilemy.aiwebsitebuilder.model.vo.user.UserVO;
-import com.lilemy.aiwebsitebuilder.service.AppService;
-import com.lilemy.aiwebsitebuilder.service.ChatHistoryService;
-import com.lilemy.aiwebsitebuilder.service.ScreenshotService;
-import com.lilemy.aiwebsitebuilder.service.UserService;
+import com.lilemy.aiwebsitebuilder.service.*;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -64,7 +63,13 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private ChatHistoryService chatHistoryService;
 
     @Resource
+    private ProjectDownloadService projectDownloadService;
+
+    @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+
+    @Resource
+    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
 
     @Resource
     private ScreenshotService screenshotService;
@@ -153,6 +158,30 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         return appDeployUrl;
     }
 
+    @Override
+    public void downloadAppCode(Long appId, HttpServletResponse response) {
+        // 基础校验
+        ThrowUtils.throwIf(appId == null || appId <= 0, ResultCode.PARAMS_ERROR, "应用不存在");
+        // 查找应用信息
+        App app = this.getById(appId);
+        ThrowUtils.throwIf(app == null, ResultCode.NOT_FOUND_ERROR, "应用不存在");
+        // 权限校验，只有应用创建者可以下载代码
+        User loginUser = userService.getLoginUser();
+        ThrowUtils.throwIf(!app.getUserId().equals(loginUser.getId()), ResultCode.NO_AUTH_ERROR, "无权限下载应用代码");
+        // 构建应用代码目录路径
+        String codeGenType = app.getCodeGenType();
+        String sourceDirName = codeGenType + "_" + appId;
+        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
+        // 检查代码目录是否存在
+        File sourceDir = new File(sourceDirPath);
+        ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(),
+                ResultCode.NOT_FOUND_ERROR, "应用代码不存在，请先生成代码");
+        // 生成下载文件名
+        String downloadFileName = String.valueOf(appId);
+        // 调用通用下载服务
+        projectDownloadService.downloadProjectAsZip(sourceDirPath, downloadFileName, response);
+    }
+
     /**
      * 异步生成应用截图并更新封面
      *
@@ -188,8 +217,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         app.setUserId(loginUser.getId());
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(12, initPrompt.length())));
-        // 暂时设置为 VUE 工程生成
-        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
+        // 使用 AI 智能选择代码生成类型
+        CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        app.setCodeGenType(selectedCodeGenType.getValue());
         // 插入数据库
         boolean result = this.save(app);
         ThrowUtils.throwIf(!result, ResultCode.OPERATION_ERROR);
@@ -213,7 +243,6 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         app.setEditTime(LocalDateTime.now());
         boolean result = this.updateById(app);
         ThrowUtils.throwIf(!result, ResultCode.OPERATION_ERROR);
-        // todo 删除应用下的所有文件
         return true;
     }
 
@@ -245,6 +274,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 log.error("删除应用封面文件失败：{}", e.getMessage());
             }
         }
+        // todo 删除应用下的所有文件
         // 删除应用
         return this.removeById(request.getId());
     }

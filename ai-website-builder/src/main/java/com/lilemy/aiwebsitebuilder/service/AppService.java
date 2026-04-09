@@ -10,6 +10,7 @@ import com.lilemy.aiwebsitebuilder.model.vo.app.AppVO;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import jakarta.servlet.http.HttpServletResponse;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -38,6 +39,14 @@ public interface AppService extends IService<App> {
      * @return 部署后的访问链接
      */
     String deployApp(AppDeployRequest request);
+
+    /**
+     * 下载应用代码
+     *
+     * @param appId    应用id
+     * @param response 响应
+     */
+    void downloadAppCode(Long appId, HttpServletResponse response);
 
     /**
      * 异步生成应用截图
