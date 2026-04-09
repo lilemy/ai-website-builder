@@ -72,6 +72,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
 
     @Resource
+    private StreamHandlerExecutor streamHandlerExecutor;
+
+    @Resource
     private ScreenshotService screenshotService;
 
     @Resource
@@ -96,7 +99,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 调用 AI 生成代码
         Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
         // 收集 AI 响应内容并在完成后记录到对话历史
-        return new StreamHandlerExecutor().doExecute(contentFlux, chatHistoryService, appId, loginUser.getId(), codeGenTypeEnum);
+        return streamHandlerExecutor.doExecute(contentFlux, chatHistoryService, appId, loginUser.getId(), codeGenTypeEnum);
     }
 
     @Override

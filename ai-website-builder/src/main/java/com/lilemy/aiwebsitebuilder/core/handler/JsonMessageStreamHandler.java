@@ -1,15 +1,18 @@
 package com.lilemy.aiwebsitebuilder.core.handler;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.lilemy.aiwebsitebuilder.ai.model.message.*;
+import com.lilemy.aiwebsitebuilder.ai.tool.BaseTool;
+import com.lilemy.aiwebsitebuilder.ai.tool.ToolManager;
 import com.lilemy.aiwebsitebuilder.constant.AppConstant;
 import com.lilemy.aiwebsitebuilder.core.builder.VueProjectBuilder;
 import com.lilemy.aiwebsitebuilder.model.enums.ChatHistoryMessageTypeEnum;
 import com.lilemy.aiwebsitebuilder.service.ChatHistoryService;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import java.util.HashSet;
@@ -22,7 +25,11 @@ import java.util.Set;
  * @since 2026-04-07 21:45
  */
 @Slf4j
+@Component
 public class JsonMessageStreamHandler {
+
+    @Resource
+    private ToolManager toolManager;
 
     /**
      * 处理 Json 消息流
@@ -81,11 +88,15 @@ public class JsonMessageStreamHandler {
             case TOOL_REQUEST -> {
                 ToolRequestMessage toolRequestMessage = JSONUtil.toBean(chunk, ToolRequestMessage.class);
                 String toolId = toolRequestMessage.getId();
+                String toolName = toolRequestMessage.getName();
                 // 检查是否是第一次看到这个工具 Id
                 if (toolId != null && !seenToolIds.contains(toolId)) {
                     // 第一次调用这个工具，记录 Id 并完整返回工具信息
                     seenToolIds.add(toolId);
-                    return "\n\n\uD83D\uDD27 [选择工具] 写入文件\n\n";
+                    // 根据工具名称获取工具实例
+                    BaseTool tool = toolManager.getTool(toolName);
+                    // 返回格式化的工具调用信息
+                    return tool.generateToolRequestResponse();
                 } else {
                     // 不是第一次调用这个工具，直接返回空
                     return "";
@@ -94,16 +105,12 @@ public class JsonMessageStreamHandler {
             }
             case TOOL_EXECUTED -> {
                 ToolExecutedMessage toolExecutedMessage = JSONUtil.toBean(chunk, ToolExecutedMessage.class);
+                String toolName = toolExecutedMessage.getName();
                 JSONObject jsonObject = JSONUtil.parseObj(toolExecutedMessage.getArguments());
-                String relativeFilePath = jsonObject.getStr("relativeFilePath");
-                String suffix = FileUtil.getSuffix(relativeFilePath);
-                String content = jsonObject.getStr("content");
-                String result = String.format("""
-                        🛠 [工具调用] 写入文件 %s
-                        ```%s
-                        %s
-                        ```
-                        """, relativeFilePath, suffix, content);
+                // 根据工具名称获取工具实例
+                BaseTool tool = toolManager.getTool(toolName);
+                // 生成对应的结果格式
+                String result = tool.generateToolExecutedResult(jsonObject);
                 // 输出前端和要持久化的内容
                 String output = String.format("\n\n%s\n\n", result);
                 chatHistoryBuilder.append(output);

@@ -3,7 +3,7 @@ package com.lilemy.aiwebsitebuilder.ai;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.lilemy.aiwebsitebuilder.ai.config.CustomRedisChatMemoryStore;
-import com.lilemy.aiwebsitebuilder.ai.tool.FileWriteTool;
+import com.lilemy.aiwebsitebuilder.ai.tool.ToolManager;
 import com.lilemy.aiwebsitebuilder.model.enums.CodeGenTypeEnum;
 import com.lilemy.aiwebsitebuilder.service.ChatHistoryService;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
@@ -42,6 +42,9 @@ public class AiCodeGeneratorServiceFactory {
 
     @Resource
     private ChatHistoryService chatHistoryService;
+
+    @Resource
+    private ToolManager toolManager;
 
     /**
      * AI 服务实例缓存
@@ -102,7 +105,7 @@ public class AiCodeGeneratorServiceFactory {
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(new FileWriteTool())
+                    .tools((Object[]) toolManager.getAllTools())
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                     )).build();

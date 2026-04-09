@@ -1,10 +1,13 @@
 package com.lilemy.aiwebsitebuilder.ai.tool;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.json.JSONObject;
 import com.lilemy.aiwebsitebuilder.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolMemoryId;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,7 +22,8 @@ import java.nio.file.StandardOpenOption;
  * @since 2026-04-07 19:55
  */
 @Slf4j
-public class FileWriteTool {
+@Component
+public class FileWriteTool extends BaseTool {
 
 
     /**
@@ -55,5 +59,28 @@ public class FileWriteTool {
             log.error(errorMsg, e);
             return errorMsg;
         }
+    }
+
+    @Override
+    public String getToolName() {
+        return "writeFile";
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "写入文件";
+    }
+
+    @Override
+    public String generateToolExecutedResult(JSONObject arguments) {
+        String relativeFilePath = arguments.getStr("relativeFilePath");
+        String suffix = FileUtil.getSuffix(relativeFilePath);
+        String content = arguments.getStr("content");
+        return String.format("""
+                [工具调用] 💾 %s %s
+                ```%s
+                %s
+                ```
+                """, getDisplayName(), relativeFilePath, suffix, content);
     }
 }

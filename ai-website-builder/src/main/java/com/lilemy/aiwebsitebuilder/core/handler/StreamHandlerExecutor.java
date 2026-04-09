@@ -2,7 +2,9 @@ package com.lilemy.aiwebsitebuilder.core.handler;
 
 import com.lilemy.aiwebsitebuilder.model.enums.CodeGenTypeEnum;
 import com.lilemy.aiwebsitebuilder.service.ChatHistoryService;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 /**
@@ -12,7 +14,11 @@ import reactor.core.publisher.Flux;
  * @since 2026-04-07 22:11
  */
 @Slf4j
+@Component
 public class StreamHandlerExecutor {
+
+    @Resource
+    private JsonMessageStreamHandler jsonMessageStreamHandler;
 
     /**
      * 执行流处理
@@ -27,7 +33,7 @@ public class StreamHandlerExecutor {
     public Flux<String> doExecute(Flux<String> originFlux, ChatHistoryService chatHistoryService,
                                   Long appId, Long userId, CodeGenTypeEnum codeGenType) {
         return switch (codeGenType) {
-            case VUE_PROJECT -> new JsonMessageStreamHandler().handle(originFlux, chatHistoryService, appId, userId);
+            case VUE_PROJECT -> jsonMessageStreamHandler.handle(originFlux, chatHistoryService, appId, userId);
             case HTML, MULTI_FILE ->
                     new SimpleTextStreamHandler().handle(originFlux, chatHistoryService, appId, userId);
         };
