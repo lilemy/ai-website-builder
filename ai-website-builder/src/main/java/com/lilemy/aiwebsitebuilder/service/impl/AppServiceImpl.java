@@ -13,6 +13,7 @@ import com.lilemy.aiwebsitebuilder.core.builder.VueProjectBuilder;
 import com.lilemy.aiwebsitebuilder.core.handler.StreamHandlerExecutor;
 import com.lilemy.aiwebsitebuilder.exception.BusinessException;
 import com.lilemy.aiwebsitebuilder.exception.ThrowUtils;
+import com.lilemy.aiwebsitebuilder.manager.rustfs.OssHelper;
 import com.lilemy.aiwebsitebuilder.mapper.AppMapper;
 import com.lilemy.aiwebsitebuilder.model.dto.app.AppCreateRequest;
 import com.lilemy.aiwebsitebuilder.model.dto.app.AppDeployRequest;
@@ -67,6 +68,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private ScreenshotService screenshotService;
+
+    @Resource
+    private OssHelper ossHelper;
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String message) {
@@ -231,6 +235,15 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             }
         } catch (Exception e) {
             log.error("删除应用下的对话历史失败：{}", e.getMessage());
+        }
+        // 删除应用的封面文件
+        String cover = oldApp.getCover();
+        if (StringUtils.isNotBlank(cover)) {
+            try {
+                ossHelper.deleteFileByUrl(cover);
+            } catch (Exception e) {
+                log.error("删除应用封面文件失败：{}", e.getMessage());
+            }
         }
         // 删除应用
         return this.removeById(request.getId());
