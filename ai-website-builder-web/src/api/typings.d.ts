@@ -179,6 +179,10 @@ declare namespace API {
     id?: number
   }
 
+  type downloadAppCodeParams = {
+    appId: number
+  }
+
   type getAllChatHistoryPageByAdminParams = {
     request: ChatHistoryQueryRequest
   }
